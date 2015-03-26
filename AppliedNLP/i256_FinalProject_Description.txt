@@ -1,0 +1,101 @@
+﻿i256 Final Project
+Fall 2013
+Title: Poetic Search Engine: Sound, Semantics, and Syntax
+Team: Kyle Booten, Herman Leung
+
+
+1.  Project Goals
+
+1.1.  Original intent
+
+Our original project idea was to create a search/match engine for lines of poetry, where given some input line (created by the user or a line from an existing poem), the engine would look through a given corpus and return a few of the best matches. The criteria, or search features, we initially considered for determining a "best" match included some combination(s) of the following:
+
+(a)	syntax (similarity of syntactic patterns)
+(b)	semantics (similarity in meaning)
+(c)	etymology (similarity of words in terms of their etymological source) 
+(d)	sound (this was actually added part way into the project)
+
+We saw the project as having at least two applications: (1) for inspiration in writing poetry, (2) for exploring literary connections between works and between authors, such as but not limited to stylistic patterns, thematic motifs, and literary references.
+
+1.1.a.  Syntax
+
+For the syntax component, we wanted flexibility with the search algorithm, using Part-of-Speech tagging (nltk.pos_tag()) and chunking (partial parsing). We didn't want to match the exact syntactic structure of the input line with the output line (which would seem to hinder the semantic matching), but instead allow permutations and variations. Originally, we tried to use itertools to obtain all possible syntactic combinations from an input line, but we quickly realized that the number of possible combinations is exponentially huger the more words there are in a line, and that seemed to significantly slow down the search algorithm to a point where we thought it would be unfeasible. We thought about narrowing down the combinations to a select few best ones (by best we mean combinations of larger chunks), but due to time issues, we were not able to explore that further.
+
+1.1.b. Semantics
+
+For the semantics component, we considered exploring three different corpora: (a) Wordnet, (b) Edinburgh Associative Thesaurus (http://www.eat.rl.ac.uk/), (c) Framenet. 
+
+(a) Wordnet unfortunately proved to be too computationally taxing and hard to use—we had considered using its similarity score functions to help determine semantic similarity, but issues of disambiguation and the clunky hierarchical structure of the Wordnet data structure itself didn't seem worth the effort given the amount of time we had to work on the project. 
+
+(b) The Edinburgh Associative Thesaurus (EAT) initially seemed promising. This data came from an experiment where lab participants were given a stimulus word and produced the first word (different from the stimulus word) that they could think of in response. The EAT became unviable when we found out that it only had 12,363 unique stimulus words and 23,218 unique response words (the same number for total unique words overall). Given how large the lexicon of any corpus of poetry would be (compared to generic English texts of comparable size), we realized the EAT would utterly fail in helping our search function most of the time and so we abandoned it.
+
+(c) Framenet <- Kyle
+
+1.1.c. Etymology
+
+We found the Etymological Wordnet (http://www1.icsi.berkeley.edu/~demelo/etymwn/) maintained by Gerard de Melo, a past visiting researcher at UC Berkeley. With 3,976,040 entries including many inflectional, derivational, spelling, and contracted variants, as well as 6 kinds of etymological relations encoded, it seemed very promising for our purposes. The idea behind using etymology as a search feature is that some literary style guides suggest that Anglo-Saxon (or Germanic) words tend to evoke a more down-to-earth and visceral flavor of meaning while Romance and Greek words tend to be more clinical and abstract. (More details are described in the Data section.)
+
+1.1.d. Sound
+
+Since rhyme is such a common feature of poetry (as well as other devices such as alliteration and meter), we ultimately decided to include a couple of them (specifically, rhyme and alliteration) as possible search features. We utilized the Carnegie Mellon University Pronouncing Dictionary (nltk.corpus.cmudict), which has an impressive 133,737 entries. (More details described in the Algorithms section.)
+
+
+1.2.  How far we got (and the process)
+
+We only got far enough in the search algorithm where we have to specify our search features rather than have it automated in terms being able to pick out the features of some input line and search the corpus for matching features.
+
+
+2.  Data (where it came from, how it was processed, etc.)
+
+2.1.  Poetry corpus (poetry_corpus_creation.py)
+
+We decided to focus on a specific genre and timeframe of poetry that is in the open domain and thus easy to find online in copious amounts—19th century American poetry, which includes such classic American poets as Emily Dickinson, Ralph Waldo Emerson, and Robert Frost. We used a simple urllib2.urlopen() method with regex and re functions to web-scrape our poetry from www.famouspoetsandpoems.com (specifically: http://famouspoetsandpoems.com/country-6/America/19th_century_American_poets.html).
+
+The process and code are roughly documented in poetry_corpus_creation.py, and described in more detail in prose below:
+
+The website had a hierarchical and predictable structure of how its poems are stored in separate html files under specific authors. Also, luckily all poem elements (poem title, poem author, and poem content) all have unique html tags which are consistent from page to page. This allowed us to get all the authors on the 19th century American poetry main page, then obtain all the individual poem URLs on each author's main page into a list, and from there collect all the poems and write them to file by iterating through the list of URLs.
+
+A few steps of post-processing were necessarily to normalize the text. There were a lot of Unicode characters (mixed with ASCII compatible characters, and which showed up as \x and \u codes) that created problems for physically reading the data correctly. We used regex to find all these characters, and then double checked with the website to make sure we knew which \x and \u characters as well as combinations thereof corresponded to which print characters, and used re.sub() to substitute them with the proper ASCII characters. Diacritic letters were all converted to non-diacritic letters (e.g., é became e).
+
+Originally we compiled the poems into a huge list of 183,422 lines of poetry, where each element in the list was in this format: (line, (author, title, line number in poem)). We wrote the list to a file that can be imported, but the file came up to 20 MB and importing it to the Python IDE took both a significantly long time and a lot of computer memory. Additionally, because our search algorithm would tag the lines with part of speech tags on the fly, this further dramatically increased runtime.
+
+To solve the above two problems, we decided then to write the lines of poetry to individual files for each poem, with POS tags (using nltk.pos_tag()), and then use the much more efficient CategorizedTaggedCorpusReader (CTCR) class method from nltk to access the corpus. Each .txt file contains an individual poem, and the filenames were written in the format AuthorFullName_PoemTitle.txt (whitespaces taken out, unsupported punctuation all changed to hyphens). These filenames became the fileids for the CTCR object, and the AuthorFullName part of the filenames was used as the categories. 
+
+The CTCR object allows us to use the standard .sents(), .raw(), .words(), .tagged_sents(), etc. methods, where we could also limit the corpus to specific fileids and categories.
+
+At the end of all this processing and reprocessing to deal with kinks and anomalies, we realized that we somehow gained a handful of poems and authors not belonging to the 19th century American category(!). We didn't have enough time to manually take them out, unfortunately. We did manually take out duplicates (the website appears to have duplicated 4 poems into separate poem webpages unwittingly).
+
+2.2.  Etymological dictionary (etym4.py)
+
+We utilized the Etymological Wordnet data (http://www1.icsi.berkeley.edu/~demelo/etymwn/) to create our etymological dictionary. 
+
+The original data came in a huge file containing almost 4 million entries. Close to a million are English entries (the rest are reverse entries). Six kinds of etymological relations are available: (i) has etymological descendants, (ii) has etymological origin, (iii) has orthographic variants, (iv & v) has derived forms (both inflectional and derivation, in both directions, i.e., “has derived forms” and “is derived from”), and (vi) etymologically related (a loose category that sometimes included synonyms).
+
+We utilized only the first 5 and did two types of normalization: (1) we condensed the relations to only etymological origin (where each entry key has its etymological origin as its value), (2) all Unicode/diacritic characters in the English entries were converted to ASCII.
+
+We ended up with 252,240 entries, and each dictionary entry came in the following format:
+
+	english_word: {'cat': [source language category], 'ori': [source language]}
+
+The source language is given as ISO 639-3 codes (a language coding system maintained by SIL International and used by linguists and various international agencies and governments). We obtained a database file from SIL International (http://www-01.sil.org/ISO639-3/codes.asp) to find out what language each code corresponds to and create a dictionary from it.
+
+We went through the 181 source languages found in the dictionary we extracted from the Etymological Wordnet, and then manually categorized the languages into 7 categories: Germanic languages, Romance languages, Modern and Ancient Greek, Celtic languages, Other European languages, Non-European languages (including pidgins, creoles, and mixed languages), and Constructed languages.
+
+3.  Algorithms (components not covered in the Data section)
+
+3.1.  Search algorithm <- Kyle
+
+3.2.  Semantics <- Kyle
+
+3.3.  Sound (sounds.py)
+
+Using the Carnegie Mellon University Pronouncing Dictionary (nltk.corpus.cmudict), we created three functions that extract: (1) the perfect rhyming component of a word, (2) the last syllable rhyming component ('imperfect'), and (3) the initial consonant sound(s) of a word.
+
+These would each allow us to find and match perfect rhymes, imperfect rhymes, and alliteration patterns. Technically, a perfect rhyme is where the primary-stressed vowel and all following sounds in both words match exactly (e.g., 'belittle' and 'riddle', where underlined part is pronounced [ˈɪɾəl] (IPA notation), at least in standard American English). The last syllable 'imperfect' rhyme simple looks a the last vowel and any trailing consonant sounds if present (e.g., 'presence' and 'absence', where the last syllable rhyme is pronounced [əns]). Initial consonant sounds include consonant clusters (e.g. 'stray street' would be considered alliterated, but not 'sandy street').
+
+The cmudict returns a list of sounds for each word. All vowels contain stress information (1 = primary stress, 2 = secondary stress, 0 = unstressed), which makes it easy to find the perfect rhyming component.
+
+4.  Contributions of Each Team Member
+
+Kyle: search algorithm, syntactic and semantic components
+Herman: data collection/corpus creation, sound and etymology components, (explored the Edinburg Associative Thesaurus for the semantic component, but it didn't work for us)
