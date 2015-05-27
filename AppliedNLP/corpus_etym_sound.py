@@ -26,14 +26,14 @@ import nltk, re, os
 from nltk.corpus import CategorizedTaggedCorpusReader as CTCR
 
 from etym4 import etym4		
-etym = dict(etym4)			# this is the etymological dictionary
+etym = dict(etym4)		# this is the etymological dictionary
 from etym4 import iso_dict	# this is the dictionary for decoding the 3-letter codes (in 'ori') 
-							#      that represent the source language
+					# that represent the source language
 from etym4 import cat_dict	# this is the dictionary for the category codes (in 'cat')
-							#		these are language categories (such as German, Romance, Non-European)
+					# these are language categories (such as German, Romance, Non-European)
 
 from sounds import get_perfect_rhyme   	# These three are functions that take 
-from sounds import get_last_rhyme		#      a word in string format as argument
+from sounds import get_last_rhyme		# a word in string format as argument
 from sounds import get_initial
 
 corpus_dir = 'C:/Python27/Poetry/'  # <-- CHANGE THIS (wherever you place the unzipped Poetry folder)
@@ -55,13 +55,13 @@ NOTE: Each tagged line also starts with an *untagged* line number
 	(e.g., '10: Amid/NNP the/DT nebulous/JJ humanity/NN')
 The categories are the authors' full names (without spaces).
 '''
-poetry.categories()		# returns all author names (76 total)
+poetry.categories()	# returns all author names (76 total)
 len(poetry.fileids())	# 5645
 
 poetry.sents()[1000]
 # ['115:', 'Bright', 'Spirit', ',', 'whose', 'illuminings', 'I', 'sought', ',']
 
-poetry.tagged_sents()[1000]		# Note untagged first item (where tag value is None)
+poetry.tagged_sents()[1000]	# Note untagged first item (where tag value is None)
 # [('115:', None), ('Bright', 'JJ'), ('Spirit', 'NN'), (',', ','), ('whose', 'WP$'), 
 	('illuminings', 'NNS'), ('I', 'PRP'), ('sought', 'VBP'), (',', ',')]
 
@@ -89,8 +89,8 @@ etym['little']		# Note, etym is a dictionary of dictionaries of *lists*
 iso_dict['enm']
 # 'Middle English (1100-1500)'
 
-iso_dict[etym['forgive']['ori'][0]]		# Note, etym is a dict of dicts of *lists* (hence [0] at the end)
-# 'Middle English (1100-1500)'			# The list may have more than 1 value stored sometimes
+iso_dict[etym['forgive']['ori'][0]]	# Note, etym is a dict of dicts of *lists* (hence [0] at the end)
+# 'Middle English (1100-1500)'		# The list may have more than 1 value stored sometimes
 
 cat_dict['ger']
 # 'Germanic languages'
@@ -99,7 +99,7 @@ cat_dict['ger']
 ##### get_perfect_rhyme, get_last_rhyme, get_initial #####
 
 get_perfect_rhyme('forgive')	# Gets vowel of primary stress plus all following sounds
-# ['IH1', 'V']					# NOTE: this is the part that determines a rhyme in traditional poetry
+# ['IH1', 'V']			# NOTE: this is the part that determines a rhyme in traditional poetry
 
 get_last_rhyme('apple')		# Gets last syllable rhyme (imperfect rhyme)
 # ['AH0', 'L']
